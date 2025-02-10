@@ -37,6 +37,6 @@ resource "google_container_node_pool" "node_pool" {
 terraform {
   backend "gcs" {
     bucket  = "onlineliquorservices_bucket"
-    prefix  = "terraform/serviceaccount/tfstate"
+    prefix  = "terraform/gke-cluster/tfstate"
   }
 }
