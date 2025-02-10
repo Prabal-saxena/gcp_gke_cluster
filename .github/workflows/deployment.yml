@@ -1,0 +1,42 @@
+name: "Service Account Creation"
+
+on:
+  pull_request:
+    branches:
+      - master # Runs when a PR is created or updated targeting main
+  workflow_dispatch: # Manual trigger via GitHub UI
+
+jobs:
+  terraform:
+    name: "Terraform Plan & Apply"
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          credentials_json: ${{ secrets.TERRAFORM_GITHUB_SA_SECRET }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.TERRAFORM_GITHUB_SA_SECRET }}
+
+      # Initialize Terraform
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="credentials=${GOOGLE_APPLICATION_CREDENTIALS}"
+
+      # Plan Terraform (check for changes)
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      # Terraform Apply (Deploy Changes) - Requires push confirmation
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
