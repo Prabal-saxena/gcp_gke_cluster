@@ -1,0 +1,27 @@
+# Ignore compiled Java classes
+*.class
+
+# Ignore IntelliJ IDEA project files
+.idea/
+*.iml
+
+# Ignore Maven target directory
+target/
+
+# Ignore logs
+*.log
+
+# Ignore environment-specific files
+.env
+
+# Ignore dependency libraries
+*.jar
+
+# Ignore operating system files
+.DS_Store
+Thumbs.db
+
+# Ignore Terraform files
+.terraform/
+*.tfstate
+*.tfstate.backup
