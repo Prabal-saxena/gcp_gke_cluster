@@ -90,11 +90,6 @@ resource "google_container_node_pool" "default_pool" {
     metadata = {
       disable-legacy-endpoints = "true"
     }
-
-    management {
-      auto_upgrade = true
-      auto_repair  = true
-    }
   }
 }
 
