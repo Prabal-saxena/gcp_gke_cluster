@@ -51,7 +51,6 @@ resource "google_container_cluster" "private_cluster" {
   subnetwork = google_compute_subnetwork.gke_subnet.id
 
   ip_allocation_policy {
-    use_ip_aliases                = true
     cluster_secondary_range_name  = "pods-range"
     services_secondary_range_name = "services-range"
   }
