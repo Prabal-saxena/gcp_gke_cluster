@@ -65,10 +65,8 @@ resource "google_container_cluster" "private_cluster" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
-  addons_config {
-    gateway_api_config {
-      channel = "CHANNEL_STANDARD"
-    }
+  gateway_api_config {
+    channel = "CHANNEL_STANDARD"
   }
 
   min_master_version = var.cluster_version
