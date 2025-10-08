@@ -72,6 +72,22 @@ resource "google_container_cluster" "private_cluster" {
   min_master_version = var.cluster_version
 }
 
+resource "google_compute_firewall" "gke_egress_allow_internet" {
+  # Naming convention to clearly indicate its purpose
+  name    = "gke-egress-allow-443"
+  network = "default" # ASSUMING you are using the 'default' VPC network
+  direction = "EGRESS"
+  target_tags = ["gke-node"]
+  destination_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["443", "80"] # 443 is critical for ghcr.io, 80 is good practice
+  }
+  source_ranges = ["0.0.0.0/0"] # This is ignored for EGRESS, but often included
+}
+
+
 #########################
 # Node Pool
 #########################
@@ -94,6 +110,7 @@ resource "google_container_node_pool" "default_pool" {
     metadata = {
       disable-legacy-endpoints = "true"
     }
+    tags = ["gke-node"]
   }
 }
 
