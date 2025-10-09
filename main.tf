@@ -35,6 +35,31 @@ resource "google_compute_subnetwork" "gke_subnet" {
 }
 
 #########################
+# Cloud NAT
+# for Outbound Access (CRITICAL for ghcr.io/image pulls)
+#########################
+
+# 1. Cloud Router
+resource "google_compute_router" "nat_router" {
+  name    = "${var.cluster_name}-router"
+  region  = var.region
+  network = google_compute_network.gke_vpc.id
+}
+
+# 2. Cloud NAT Gateway
+resource "google_compute_router_nat" "gke_nat" {
+  name    = "${var.cluster_name}-nat"
+  router  = google_compute_router.nat_router.name
+  region  = google_compute_router.nat_router.region
+  nat_ip_allocate_option    = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
+  }
+}
+
+#########################
 # GKE Cluster (Private, VPC-native)
 #########################
 
@@ -42,6 +67,12 @@ resource "google_container_cluster" "private_cluster" {
   name     = var.cluster_name
   location = var.region
 
+  master_authorized_networks_config {
+    cidr_blocks {
+      cidr_block   = var.subnet_ip_cidr_range # Allows access from resources within the GKE VPC
+      display_name = "GKE VPC Access"
+    }
+  }
   # Basic Node Pool Configuration
   remove_default_node_pool = true
   initial_node_count = 1
@@ -68,14 +99,13 @@ resource "google_container_cluster" "private_cluster" {
   gateway_api_config {
     channel = "CHANNEL_STANDARD"
   }
-
   min_master_version = var.cluster_version
 }
 
+# Firewall rule: Allows GKE nodes (tagged "gke-node") to access the NAT Gateway
 resource "google_compute_firewall" "gke_egress_allow_internet" {
-  # Naming convention to clearly indicate its purpose
-  name    = "gke-egress-allow-443"
-  network = "default" # ASSUMING you are using the 'default' VPC network
+  name    = "gke-${var.cluster_name}-egress-443"
+  network = google_compute_network.gke_vpc.name # CORRECTED: Use the custom VPC network
   direction = "EGRESS"
   target_tags = ["gke-node"]
   destination_ranges = ["0.0.0.0/0"]
@@ -84,7 +114,6 @@ resource "google_compute_firewall" "gke_egress_allow_internet" {
     protocol = "tcp"
     ports    = ["443", "80"] # 443 is critical for ghcr.io, 80 is good practice
   }
-  source_ranges = ["0.0.0.0/0"] # This is ignored for EGRESS, but often included
 }
 
 
@@ -101,8 +130,11 @@ resource "google_container_node_pool" "default_pool" {
 
   node_config {
     machine_type = var.node_machine_type  # Smallest recommended instance
-    disk_size_gb = 20
+    disk_size_gb = 10
     preemptible  = true  # Use preemptible nodes for cost-saving
+
+    # Required for Workload Identity
+    service_account = "default"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
