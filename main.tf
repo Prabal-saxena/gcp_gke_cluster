@@ -67,12 +67,6 @@ resource "google_container_cluster" "private_cluster" {
   name     = var.cluster_name
   location = var.region
 
-  master_authorized_networks_config {
-    cidr_blocks {
-      cidr_block   = var.subnet_ip_cidr_range # Allows access from resources within the GKE VPC
-      display_name = "GKE VPC Access"
-    }
-  }
   # Basic Node Pool Configuration
   remove_default_node_pool = true
   initial_node_count = 1
@@ -88,7 +82,7 @@ resource "google_container_cluster" "private_cluster" {
 
   private_cluster_config {
     enable_private_nodes    = true
-    master_ipv4_cidr_block  = "192.168.0.0/28" # Must not overlap existing ranges
+    master_ipv4_cidr_block  = "172.16.0.0/28" # Must not overlap existing ranges
     enable_private_endpoint = false           # Keeping API public, restrict with authorized networks if needed
   }
 
@@ -99,13 +93,14 @@ resource "google_container_cluster" "private_cluster" {
   gateway_api_config {
     channel = "CHANNEL_STANDARD"
   }
+
   min_master_version = var.cluster_version
 }
 
-# Firewall rule: Allows GKE nodes (tagged "gke-node") to access the NAT Gateway
 resource "google_compute_firewall" "gke_egress_allow_internet" {
-  name    = "gke-${var.cluster_name}-egress-443"
-  network = google_compute_network.gke_vpc.name # CORRECTED: Use the custom VPC network
+  # Naming convention to clearly indicate its purpose
+  name    = "gke-egress-allow-443"
+  network = "default" # ASSUMING you are using the 'default' VPC network
   direction = "EGRESS"
   target_tags = ["gke-node"]
   destination_ranges = ["0.0.0.0/0"]
@@ -130,11 +125,8 @@ resource "google_container_node_pool" "default_pool" {
 
   node_config {
     machine_type = var.node_machine_type  # Smallest recommended instance
-    disk_size_gb = 10
+    disk_size_gb = 20
     preemptible  = true  # Use preemptible nodes for cost-saving
-
-    # Required for Workload Identity
-    service_account = "default"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
@@ -152,3 +144,4 @@ terraform {
     prefix  = "terraform/gke-cluster/tfstate"
   }
 }
+
