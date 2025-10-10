@@ -88,7 +88,7 @@ resource "google_container_cluster" "private_cluster" {
 
   private_cluster_config {
     enable_private_nodes    = true
-    master_ipv4_cidr_block  = "172.16.0.0/28" # Must not overlap existing ranges
+    master_ipv4_cidr_block  = "192.168.0.0/28" # Must not overlap existing ranges
     enable_private_endpoint = false           # Keeping API public, restrict with authorized networks if needed
   }
 

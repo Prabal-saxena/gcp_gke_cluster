@@ -53,10 +53,10 @@ variable "cluster_version" {
 
 variable "node_count" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "node_machine_type" {
   type    = string
-  default = "e2-small"
+  default = "e2-medium"
 }
