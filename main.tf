@@ -123,7 +123,7 @@ resource "google_container_node_pool" "default_pool" {
   cluster    = google_container_cluster.private_cluster.name
   autoscaling {
     min_node_count = 1 # Minimum desired nodes
-    max_node_count = 2 # Maximum desired nodes
+    max_node_count = 3 # Maximum desired nodes
   }
 
   node_config {
