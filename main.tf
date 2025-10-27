@@ -121,7 +121,10 @@ resource "google_container_node_pool" "default_pool" {
   name       = "${var.cluster_name}-default-pool"
   location   = var.region
   cluster    = google_container_cluster.private_cluster.name
-  node_count = 1
+  autoscaling {
+    min_node_count = 1 # Minimum desired nodes
+    max_node_count = 3 # Maximum desired nodes
+  }
 
   node_config {
     machine_type = var.node_machine_type  # Smallest recommended instance
